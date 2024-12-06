@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Questions Page</title>
+    <style>
+        /* General body styling */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: black;
+            color: #FFD700;
+        }
+
+        /* Top Navigation Bar */
+        .top-nav {
+            background: #333;
+            color: #FFD700;
+            padding: 10px 0;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .top-nav ul {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            list-style: none;
+        }
+
+        .top-nav li {
+            margin: 0 20px;
+        }
+
+        .top-nav a {
+            color: #FFD700;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 16px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+
+        .top-nav a:hover {
+            background: #FFD700;
+            color: black;
+        }
+
+        /* Footer */
+        .bottom-bar {
+            background: #333;
+            color: #FFD700;
+            text-align: center;
+            padding: 10px 0;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .bottom-bar a {
+            color: #FFD700;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .bottom-bar a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Page Content */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 100px 20px 60px; /* Add padding for top nav and bottom bar */
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        /* Question Cards */
+        .question-card {
+            background: #222;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .options {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .option-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #444;
+            color: #FFD700;
+        }
+
+        .option-btn:hover {
+            background: #FFD700;
+            color: black;
+        }
+
+        .result {
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            color: #FFD700;
+        }
+
+        .green { background: #4CAF50; }
+        .yellow { background: #FFC107; color: black; }
+        .red { background: #F44336; }
+
+        /* Progress Bar */
+        #progress-indicator {
+            height: 4px;
+            background: #e0e0e0;
+            margin: 20px 0;
+        }
+
+        #progress-bar {
+            height: 100%;
+            background: #FFD700;
+            width: 0;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <nav class="top-nav">
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="questions.html">Questions</a></li>
+            <li><a href ="contact.html">Contact</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <h1>Assessment Roadmap</h1>
+        <div id="progress-indicator">
+            <div id="progress-bar"></div>
+        </div>
+        <div id="question-container"></div>
+        <div id="result-container"></div>
+        <!-- Email Form Section -->
+        <div id="email-container" style="display: none;">
+            <h2>Receive Your Results</h2>
+            <form id="email-form" method="POST" action="send_email.php" onsubmit="sendEmail(event)">
+                <label for="user-email">Enter your email to receive your result:</label><br>
+                <input type="email" id="user-email" name="email" required placeholder="Your email address" aria-label="Email address"><br><br>
+                <input type="hidden" name="resultTitle" id="resultTitle" value="">
+                <input type="hidden" name="resultDescription" id="resultDescription" value="">
+                <button type="submit" id="send-email-btn">Send Email</button>
+            </form>
+        </div>
+        <button id="export-pdf" style="display: none;">Export to PDF</button>
+    </div>
+
+    <footer class="bottom-bar">
+        <p>
+            For more information, contact us at:
+            <a href="mailto:contact@example.com">contact@example.com</a>
+        </p>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        const questions = {
+            start: {
+                text: "Are you a citizen of a Commonwealth country?",
+                options: [
+                    { text: "Yes", next: "q2" },
+                    { text: "No", next: "q1" }
+                ]
+            },
+            q1: {
+                text: "What is your nationality?",
+                options: [
+                    { text: "I am a UK national", next: "q9" },
+                    { text: "Other nationality", next: "q5" }
+                ]
+            },
+            q2: {
+                text: "Did you arrive in the UK before 1 January 1973?",
+                options: [
+                    { text: "Yes", next: "q3" },
+                    { text: "No", next: "q4" }
+                ]
+            },
+            q3: {
+                text: "Did you leave the UK for more than 2 years but are now lawfully back?",
+                options: [
+                    { text: "Yes", next: "q3c" },
+                    { text: "No", next: "not_eligible_red" }
+                ]
+            },
+            q3c: {
+                text: "Have you lived continuously in the UK since your arrival or birth?",
+                options: [
+                    { text: "Yes", next: "eligible_green" },
+                    { text: "No", next: "q4" }
+                ]
+            },
+            q4: {
+                text: "Do you have strong ties to the UK (e.g., family, work, or property)?",
+                options: [
+                    { text: "Yes", next: "eligible_green" },
+                    { text: "No", next: "q5" }
+                ]
+            },
+            q5: {
+                text: "Did you arrive in the UK before 1 January 1973 and have indefinite leave to remain?",
+                options: [
+                    { text: "Yes", next: "eligible_green" },
+                    { text: "No", next: "q6" }
+                ]
+            },
+            q6: {
+                text: "Did you arrive in the UK between 1 January 1973 and 31 December 1988?",
+                options: [
+                    { text: "Yes", next: "pre_settled_yellow" },
+                    { text: "No", next: "q7" }
+                ]
+            },
+            q7: {
+                text: "Were you born in the UK or did you arrive before you turned 18?",
+                options: [
+                    { text: "Yes", next: "settled_yellow" },
+                    { text: "No", next: "q8" }
+                ]
+            },
+            q8: {
+                text: "Was your parent ordinarily resident in the UK on 1 January 1973?",
+                options: [
+                    { text: "Yes", next: "eligible_green" },
+                    { text: "No", next: "q9" }
+                ]
+            },
+            q9: {
+                text: "Have you lived in the UK for at least  5 years?",
+                options: [
+                    { text: "Yes", next: "settled_yellow" },
+                    { text: "No", next: "pre_settled_yellow" }
+                ]
+            },
+            // ... Your questions continue here
+        };
+
+        const results = {
+            eligible_green: {
+                title: "You Are Eligible to Live in the UK",
+                description: "You meet the criteria to live in the UK.",
+                class: "green"
+            },
+            settled_yellow: {
+                title: "You May Be Eligible for Settled Status",
+                description: "You have lived in the UK long enough to apply for settled status.",
+                class: "yellow"
+            },
+            pre_settled_yellow: {
+                title: "You May Be Eligible for Pre-Settled Status",
+                description: "You may qualify for pre-settled status, but more continuous residence is needed.",
+                class: "yellow"
+            },
+            not_eligible_red: {
+                title: "You Are Not Eligible to Live in the UK",
+                description: "Unfortunately, you do not meet the requirements to live in the UK.",
+                class: "red"
+            }
+        };
+
+        let currentPath = [];
+
+        function showQuestion(questionId) {
+            const question = questions[questionId];
+            if (!question) {
+                showResult();
+                return;
+            }
+
+            const container = document.getElementById('question-container');
+            container.innerHTML = `
+                <div class="question-card">
+                    <h3>${question.text}</h3>
+                    <div class="options">
+                        ${question.options.map(option => 
+                            `<button class="option-btn" onclick="selectOption('${option.next}')">${option.text}</button>`
+                        ).join('')}
+                    </div>
+                </div>
+            `;
+
+            updateProgress();
+        }
+
+        function selectOption(next) {
+            currentPath.push(next);
+            showQuestion(next);
+        }
+
+        function updateProgress() {
+            const progressBar = document.getElementById('progress-bar');
+            const totalQuestions = Object.keys(questions).length;
+            const progress = (currentPath.length / totalQuestions) * 100;
+            progressBar.style.width = `${Math.min(progress, 100)}%`;
+        }
+
+        function showResult() {
+            const resultKey = currentPath[currentPath.length - 1];
+            const resultData = results[resultKey];
+            
+            document.getElementById('question-container').style.display = 'none';
+            document.getElementById('result-container').innerHTML = `
+                <div class="result ${resultData.class}">
+                    <h2>${resultData.title}</h2>
+                    <p>${resultData.description}</p>
+                </div>
+            `;
+            document.getElementById('email-container').style.display = 'block';
+            document.getElementById('export-pdf').style.display = 'block';
+            // Set the hidden fields with result data
+            document.getElementById('resultTitle').value = resultData.title;
+            document.getElementById('resultDescription').value = resultData.description;
+        }
+
+        function sendEmail(event) {
+            event.preventDefault(); // Prevent default form submission
+
+            const userEmail = document.getElementById('user-email').value;
+            if (!userEmail) {
+                alert("Please enter a valid email address.");
+                return;
+            }
+
+            const resultKey = currentPath[currentPath.length - 1];
+            const resultData = results[resultKey];
+            const formData = new FormData();
+            formData.append('email', userEmail);
+            formData.append('resultTitle', resultData.title);
+            formData.append('resultDescription', resultData.description);
+
+            fetch('send_email.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Your result has been sent to your email!');
+                } else {
+                    alert('There was an error sending the email. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error sending email. Please try again later.');
+            });
+        }
+
+        // Start the assessment
+        showQuestion('start');
+    </script>
+</body>
+</html>
